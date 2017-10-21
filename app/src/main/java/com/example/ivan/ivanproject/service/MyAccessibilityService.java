@@ -6,63 +6,73 @@ import android.content.Intent;
 import android.util.Log;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
-import android.widget.ListView;
 import android.widget.Toast;
 
 import java.util.List;
 
 public class MyAccessibilityService extends AccessibilityService {
+    private boolean hadClickItem = false;
 
     @Override
     public void onAccessibilityEvent(AccessibilityEvent accessibilityEvent) {
         int eventType = accessibilityEvent.getEventType();
+
         printEventType(eventType);
-        for (CharSequence txt : accessibilityEvent.getText()) {
-            Log.e("MyAccessibilityService", "onAccessibilityEvent:text=" + txt);
+        synchronized (this) {
+            switch (eventType) {
+                case AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED:
+                    AccessibilityNodeInfo accessibilityNodeInfo = accessibilityEvent.getSource();
+                    if (accessibilityNodeInfo != null) {
+                        operationPage(accessibilityNodeInfo);
+                    }
+                    break;
+                default:
+                    break;
+            }
         }
-        getHomepageView();
-
-//        switch (eventType) {
-//            case AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED:
-//                break;
-//            default:
-//                break;
-//        }
     }
 
     @SuppressLint("NewApi")
-    private void getHomepageView() {
-        AccessibilityNodeInfo accessibilityNodeInfo = getRootInActiveWindow();
-        if (accessibilityNodeInfo != null) {
-            List<AccessibilityNodeInfo> accessibilityNodeInfos = accessibilityNodeInfo.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/ak3");
-            getListView(accessibilityNodeInfo);
-
+    private void operationPage(AccessibilityNodeInfo accessibilityNodeInfo) {
+        List<AccessibilityNodeInfo> items = accessibilityNodeInfo.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/ajz");
+        if(!items.isEmpty()) {
+            clickListViewItem(accessibilityNodeInfo,items);
+        }else {
+             items = accessibilityNodeInfo.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/a_");
+            Log.e("MyAccessibilityService", "operationPage: ");
+//            hadClickItem=false;
         }
-    }
-
-    public int findKeyWorkPosition(List<AccessibilityNodeInfo> accessibilityNodeInfos){
-        for(int i = 0;i<accessibilityNodeInfos.size();i++){
-            if ("ivan".equals(accessibilityNodeInfos.get(i).getText().toString().trim())) {
-                return i;
-            }
-        }
-        return -1;
     }
 
     @SuppressLint("NewApi")
-    public ListView getListView(AccessibilityNodeInfo accessibilityNodeInfo){
-        List<AccessibilityNodeInfo> accessibilityNodeInfos = accessibilityNodeInfo.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/bt0");
-        for(AccessibilityNodeInfo info:accessibilityNodeInfos){
-            if("android.widget.ListView".equals(info.getClassName())){
+    private void clickListViewItem(AccessibilityNodeInfo accessibilityNodeInfo,List<AccessibilityNodeInfo> items) {
+        for (AccessibilityNodeInfo info : items) {
+                if (isNewMessage(info)) {
+                    Log.e("MyAccessibilityService", "clickListViewItem: ");
+                    clickKeyWorkView(accessibilityNodeInfo.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/ak3"));
+                }
+        }
+    }
 
+    @SuppressLint("NewApi")
+    private boolean isNewMessage(AccessibilityNodeInfo accessibilityNodeInfo) {
+        List<AccessibilityNodeInfo> accessibilityNodeInfos = accessibilityNodeInfo.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/ak0");
+        return !accessibilityNodeInfos.isEmpty();
 
-//                } catch (ClassNotFoundException e) {
-//                    e.printStackTrace();
-//                }
+    }
+
+    @SuppressLint("InlinedApi")
+    public void clickKeyWorkView(List<AccessibilityNodeInfo> accessibilityNodeInfos) {
+        for (AccessibilityNodeInfo accessibilityNodeInfo : accessibilityNodeInfos) {
+            if ("ivan".equals(accessibilityNodeInfo.getText().toString().trim())) {
+                if (!hadClickItem) {
+                    hadClickItem = true;
+                    accessibilityNodeInfo.getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                }else{
+                }
 
             }
         }
-        return null;
     }
 
     @Override
