@@ -16,7 +16,7 @@ public class MyAccessibilityService extends AccessibilityService {
     private final static String HOME_PAGE_ITEM_ID = "com.tencent.mm:id/ajz";
     private final static String TAKE_RED_PACKET_TEX = "领取红包";
     private final static String TAKE_RED_PACKET_BTN_ID = "com.tencent.mm:id/brt";
-    private final static String NEW_MESSAGE_IMG_ID = "com.tencent.mm:id/ak0";
+    private final static String NEW_MESSAGE_IMG_ID = "com.tencent.mm:id/il";
     private final static String MESSAGE_TEXT_VIEW_ID = "com.tencent.mm:id/ak3";
     private final static String TAKE_FINISH_PAGE_BACK_VIEW_ID = "com.tencent.mm:id/hg";
     private final static String CHAT_PAGE_BACK_VIEW_ID = "android:id/text1";
@@ -36,26 +36,26 @@ public class MyAccessibilityService extends AccessibilityService {
     private boolean hadClickChatBack = false;
     private boolean hadOpenRedPacket = false;
 
-    private Handler booleanHandler = new Handler(new Handler.Callback() {
-        @SuppressLint("InlinedApi")
-        @Override
-        public boolean handleMessage(Message message) {
-            hadClickNewMessage = false;
-            hadClickRedPacket = false;
-            hadClickTakeFinishBack = false;
-            hadClickChatBack = false;
-            hadOpenRedPacket = false;
-            return true;
-        }
-    });
+//    private Handler booleanHandler = new Handler(new Handler.Callback() {
+//        @SuppressLint("InlinedApi")
+//        @Override
+//        public boolean handleMessage(Message message) {
+//            hadClickNewMessage = false;
+//            hadClickRedPacket = false;
+//            hadClickTakeFinishBack = false;
+//            hadClickChatBack = false;
+//            hadOpenRedPacket = false;
+//            return true;
+//        }
+//    });
 
     private Handler handler = new Handler(new Handler.Callback() {
         @SuppressLint("InlinedApi")
         @Override
         public boolean handleMessage(Message message) {
             ((AccessibilityNodeInfo) message.obj).performAction(AccessibilityNodeInfo.ACTION_CLICK);
-            booleanHandler.removeMessages(0);
-            booleanHandler.sendEmptyMessageDelayed(0, 10000);
+//            booleanHandler.removeMessages(0);
+//            booleanHandler.sendEmptyMessageDelayed(0, 10000);
             return true;
         }
     });
@@ -65,16 +65,13 @@ public class MyAccessibilityService extends AccessibilityService {
     public void onAccessibilityEvent(AccessibilityEvent accessibilityEvent) {
 //        Log.e("MyAccessibilityService", "onAccessibilityEvent: "+accessibilityEvent.getClassName());
         int eventType = accessibilityEvent.getEventType();
-//
         printEventType(eventType);
         switch (eventType) {
             case AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED:
                 operationHomePage(accessibilityEvent.getSource());
                 break;
-//            case AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED:
-//                typeWindowStateChanged(accessibilityEvent);
-//                break;
-            default:
+            case AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED:
+                typeWindowStateChanged(accessibilityEvent);
                 break;
         }
     }
@@ -83,7 +80,7 @@ public class MyAccessibilityService extends AccessibilityService {
     private void operationHomePage(AccessibilityNodeInfo accessibilityNodeInfo) {
         List<AccessibilityNodeInfo> items = accessibilityNodeInfo.findAccessibilityNodeInfosByViewId(HOME_PAGE_ITEM_ID);
         if (!items.isEmpty()) {
-            clickListViewItem(accessibilityNodeInfo, items);
+            clickListViewItem(items);
         } else {
             items = accessibilityNodeInfo.findAccessibilityNodeInfosByText(TAKE_RED_PACKET_TEX);
             if (!items.isEmpty()) {
@@ -154,6 +151,7 @@ public class MyAccessibilityService extends AccessibilityService {
     @SuppressLint("NewApi")
     private void takeFinishBack(AccessibilityNodeInfo accessibilityNodeInfo) {
         List<AccessibilityNodeInfo> items = accessibilityNodeInfo.findAccessibilityNodeInfosByViewId(TAKE_FINISH_PAGE_BACK_VIEW_ID);
+        Log.e("MyAccessibilityService", "takeFinishBack: items.size="+items.size());
         if (!items.isEmpty() && !hadClickTakeFinishBack) {
             hadClickTakeFinishBack = true;
             sendMessage(CLICK_TAKE_FINISH_BACK, items.get(0).getParent(), 0);
@@ -170,10 +168,10 @@ public class MyAccessibilityService extends AccessibilityService {
     }
 
     @SuppressLint("NewApi")
-    private void clickListViewItem(AccessibilityNodeInfo accessibilityNodeInfo, List<AccessibilityNodeInfo> items) {
+    private void clickListViewItem(List<AccessibilityNodeInfo> items) {
         for (AccessibilityNodeInfo info : items) {
             if (isNewMessage(info)) {
-                clickKeyWorkView(accessibilityNodeInfo.findAccessibilityNodeInfosByViewId(MESSAGE_TEXT_VIEW_ID));
+                clickKeyWorkView(info.findAccessibilityNodeInfosByViewId(MESSAGE_TEXT_VIEW_ID));
             }
         }
     }
