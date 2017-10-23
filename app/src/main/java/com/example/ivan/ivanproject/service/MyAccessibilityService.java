@@ -40,9 +40,11 @@ public class MyAccessibilityService extends AccessibilityService {
         @SuppressLint("InlinedApi")
         @Override
         public boolean handleMessage(Message message) {
-            ((AccessibilityNodeInfo) message.obj).performAction(AccessibilityNodeInfo.ACTION_CLICK);
-            booleanHandler.removeMessages(0);
-            booleanHandler.sendEmptyMessageDelayed(0, 10000);
+            hadClickNewMessage = false;
+            hadClickRedPacket = false;
+            hadClickTakeFinishBack = false;
+            hadClickChatBack = false;
+            hadOpenRedPacket = false;
             return true;
         }
     });
@@ -51,11 +53,9 @@ public class MyAccessibilityService extends AccessibilityService {
         @SuppressLint("InlinedApi")
         @Override
         public boolean handleMessage(Message message) {
-            hadClickNewMessage = false;
-            hadClickRedPacket = false;
-            hadClickTakeFinishBack = false;
-            hadClickChatBack = false;
-            hadOpenRedPacket = false;
+            ((AccessibilityNodeInfo) message.obj).performAction(AccessibilityNodeInfo.ACTION_CLICK);
+            booleanHandler.removeMessages(0);
+            booleanHandler.sendEmptyMessageDelayed(0, 10000);
             return true;
         }
     });
@@ -107,6 +107,8 @@ public class MyAccessibilityService extends AccessibilityService {
         }
     }
 
+
+
     private void clickRedPacketMessage(List<AccessibilityNodeInfo> items) {
         for (AccessibilityNodeInfo accessibilityNodeInfo : items) {
             if (!hadClickRedPacket) {
@@ -122,7 +124,7 @@ public class MyAccessibilityService extends AccessibilityService {
         List<AccessibilityNodeInfo> items = accessibilityNodeInfo.findAccessibilityNodeInfosByViewId(CHAT_PAGE_BACK_VIEW_ID);
         if (!items.isEmpty() && !hadClickChatBack) {
             hadClickChatBack = true;
-            sendMessage(CLICK_CHAT_BACK, accessibilityNodeInfo.getParent(), 2);
+            sendMessage(CLICK_CHAT_BACK, items.get(0).getParent(), 2000);
         }
     }
 
@@ -163,6 +165,8 @@ public class MyAccessibilityService extends AccessibilityService {
         message.what = what;
         message.obj = accessibilityNodeInfo;
         handler.sendMessageDelayed(message, delayMillis);
+        Log.e("MyAccessibilityService", "sendMessage: ");
+        
     }
 
     @SuppressLint("NewApi")
