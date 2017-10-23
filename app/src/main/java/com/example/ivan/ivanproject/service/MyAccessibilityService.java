@@ -3,6 +3,8 @@ package com.example.ivan.ivanproject.service;
 import android.accessibilityservice.AccessibilityService;
 import android.annotation.SuppressLint;
 import android.content.Intent;
+import android.os.Handler;
+import android.os.Message;
 import android.util.Log;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
@@ -11,87 +13,189 @@ import android.widget.Toast;
 import java.util.List;
 
 public class MyAccessibilityService extends AccessibilityService {
-    private boolean hadClickItem = false;
+    private final static String HOME_PAGE_ITEM_ID = "com.tencent.mm:id/ajz";
+    private final static String TAKE_RED_PACKET_TEX = "领取红包";
+    private final static String TAKE_RED_PACKET_BTN_ID = "com.tencent.mm:id/brt";
+    private final static String NEW_MESSAGE_IMG_ID = "com.tencent.mm:id/ak0";
+    private final static String MESSAGE_TEXT_VIEW_ID = "com.tencent.mm:id/ak3";
+    private final static String TAKE_FINISH_PAGE_BACK_VIEW_ID = "com.tencent.mm:id/hg";
+    private final static String CHAT_PAGE_BACK_VIEW_ID = "android:id/text1";
+
+    private final static String KEY_WORK = "ivan";
+
+
+    private final static String TAKE_FINISH_PAGE = "com.tencent.mm.plugin.luckymoney.ui.LuckyMoneyDetailUI";
+    private final static String TAKE_RED_PAGE_DIALOG = "com.tencent.mm.plugin.luckymoney.ui.En_fba4b94f";
+
+
+    private final static int CLICK_NEW_MESSAGE = 1, CLICK_TAKE_RED_PACKET = 2, CLICK_OPEN_RED_PACKET = 3, CLICK_CHAT_BACK = 4, CLICK_TAKE_FINISH_BACK = 5;
+
+    private boolean hadClickNewMessage = false;
+    private boolean hadClickRedPacket = false;
+    private boolean hadClickTakeFinishBack = false;
+    private boolean hadClickChatBack = false;
+    private boolean hadOpenRedPacket = false;
+
+    private Handler booleanHandler = new Handler(new Handler.Callback() {
+        @SuppressLint("InlinedApi")
+        @Override
+        public boolean handleMessage(Message message) {
+            ((AccessibilityNodeInfo) message.obj).performAction(AccessibilityNodeInfo.ACTION_CLICK);
+            booleanHandler.removeMessages(0);
+            booleanHandler.sendEmptyMessageDelayed(0, 10000);
+            return true;
+        }
+    });
+
+    private Handler handler = new Handler(new Handler.Callback() {
+        @SuppressLint("InlinedApi")
+        @Override
+        public boolean handleMessage(Message message) {
+            hadClickNewMessage = false;
+            hadClickRedPacket = false;
+            hadClickTakeFinishBack = false;
+            hadClickChatBack = false;
+            hadOpenRedPacket = false;
+            return true;
+        }
+    });
+
 
     @Override
     public void onAccessibilityEvent(AccessibilityEvent accessibilityEvent) {
+//        Log.e("MyAccessibilityService", "onAccessibilityEvent: "+accessibilityEvent.getClassName());
         int eventType = accessibilityEvent.getEventType();
-
+//
         printEventType(eventType);
-        synchronized (this) {
-            switch (eventType) {
-                case AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED:
-                    AccessibilityNodeInfo accessibilityNodeInfo = accessibilityEvent.getSource();
-                    if (accessibilityNodeInfo != null) {
-                        operationPage(accessibilityNodeInfo);
-                    }
-                    break;
-                default:
-                    break;
+        switch (eventType) {
+            case AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED:
+                operationHomePage(accessibilityEvent.getSource());
+                break;
+//            case AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED:
+//                typeWindowStateChanged(accessibilityEvent);
+//                break;
+            default:
+                break;
+        }
+    }
+
+    @SuppressLint("NewApi")
+    private void operationHomePage(AccessibilityNodeInfo accessibilityNodeInfo) {
+        List<AccessibilityNodeInfo> items = accessibilityNodeInfo.findAccessibilityNodeInfosByViewId(HOME_PAGE_ITEM_ID);
+        if (!items.isEmpty()) {
+            clickListViewItem(accessibilityNodeInfo, items);
+        } else {
+            items = accessibilityNodeInfo.findAccessibilityNodeInfosByText(TAKE_RED_PACKET_TEX);
+            if (!items.isEmpty()) {
+                clickRedPacketMessage(items);
+            } else {
+                chatBack(accessibilityNodeInfo);
             }
         }
-    }
-
-    @SuppressLint("NewApi")
-    private void operationPage(AccessibilityNodeInfo accessibilityNodeInfo) {
-        List<AccessibilityNodeInfo> items = accessibilityNodeInfo.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/ajz");
-        if(!items.isEmpty()) {
-            clickListViewItem(accessibilityNodeInfo,items);
-        }else {
-             items = accessibilityNodeInfo.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/a_");
-            Log.e("MyAccessibilityService", "operationPage: ");
-//            hadClickItem=false;
-        }
-    }
-
-    @SuppressLint("NewApi")
-    private void clickListViewItem(AccessibilityNodeInfo accessibilityNodeInfo,List<AccessibilityNodeInfo> items) {
-        for (AccessibilityNodeInfo info : items) {
-                if (isNewMessage(info)) {
-                    Log.e("MyAccessibilityService", "clickListViewItem: ");
-                    clickKeyWorkView(accessibilityNodeInfo.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/ak3"));
-                }
-        }
-    }
-
-    @SuppressLint("NewApi")
-    private boolean isNewMessage(AccessibilityNodeInfo accessibilityNodeInfo) {
-        List<AccessibilityNodeInfo> accessibilityNodeInfos = accessibilityNodeInfo.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/ak0");
-        return !accessibilityNodeInfos.isEmpty();
-
     }
 
     @SuppressLint("InlinedApi")
     public void clickKeyWorkView(List<AccessibilityNodeInfo> accessibilityNodeInfos) {
         for (AccessibilityNodeInfo accessibilityNodeInfo : accessibilityNodeInfos) {
-            if ("ivan".equals(accessibilityNodeInfo.getText().toString().trim())) {
-                if (!hadClickItem) {
-                    hadClickItem = true;
-                    accessibilityNodeInfo.getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
-                }else{
+            if (KEY_WORK.equals(accessibilityNodeInfo.getText().toString().trim())) {
+                if (!hadClickNewMessage) {
+                    hadClickNewMessage = true;
+                    sendMessage(CLICK_NEW_MESSAGE, accessibilityNodeInfo.getParent(), 0);
+                    break;
                 }
-
             }
         }
     }
 
+    private void clickRedPacketMessage(List<AccessibilityNodeInfo> items) {
+        for (AccessibilityNodeInfo accessibilityNodeInfo : items) {
+            if (!hadClickRedPacket) {
+                hadClickRedPacket = true;
+                sendMessage(CLICK_TAKE_RED_PACKET, accessibilityNodeInfo.getParent(), 0);
+                break;
+            }
+        }
+    }
+
+    @SuppressLint("NewApi")
+    private void chatBack(AccessibilityNodeInfo accessibilityNodeInfo) {
+        List<AccessibilityNodeInfo> items = accessibilityNodeInfo.findAccessibilityNodeInfosByViewId(CHAT_PAGE_BACK_VIEW_ID);
+        if (!items.isEmpty() && !hadClickChatBack) {
+            hadClickChatBack = true;
+            sendMessage(CLICK_CHAT_BACK, accessibilityNodeInfo.getParent(), 2);
+        }
+    }
+
+    private void typeWindowStateChanged(AccessibilityEvent accessibilityEvent) {
+        String className = accessibilityEvent.getClassName().toString();
+        switch (className) {
+            case TAKE_RED_PAGE_DIALOG:
+                openRedPacket(accessibilityEvent.getSource());
+                break;
+            case TAKE_FINISH_PAGE:
+                takeFinishBack(accessibilityEvent.getSource());
+                break;
+            default:
+                break;
+        }
+    }
+
+    @SuppressLint("NewApi")
+    private void openRedPacket(AccessibilityNodeInfo accessibilityNodeInfo) {
+        List<AccessibilityNodeInfo> items = accessibilityNodeInfo.findAccessibilityNodeInfosByViewId(TAKE_RED_PACKET_BTN_ID);
+        if (!items.isEmpty() && !hadOpenRedPacket) {
+            hadOpenRedPacket = true;
+            sendMessage(CLICK_OPEN_RED_PACKET, items.get(0), 0);
+        }
+    }
+
+    @SuppressLint("NewApi")
+    private void takeFinishBack(AccessibilityNodeInfo accessibilityNodeInfo) {
+        List<AccessibilityNodeInfo> items = accessibilityNodeInfo.findAccessibilityNodeInfosByViewId(TAKE_FINISH_PAGE_BACK_VIEW_ID);
+        if (!items.isEmpty() && !hadClickTakeFinishBack) {
+            hadClickTakeFinishBack = true;
+            sendMessage(CLICK_TAKE_FINISH_BACK, items.get(0).getParent(), 0);
+        }
+    }
+
+    private void sendMessage(int what, AccessibilityNodeInfo accessibilityNodeInfo, long delayMillis) {
+        Message message = new Message();
+        message.what = what;
+        message.obj = accessibilityNodeInfo;
+        handler.sendMessageDelayed(message, delayMillis);
+    }
+
+    @SuppressLint("NewApi")
+    private void clickListViewItem(AccessibilityNodeInfo accessibilityNodeInfo, List<AccessibilityNodeInfo> items) {
+        for (AccessibilityNodeInfo info : items) {
+            if (isNewMessage(info)) {
+                clickKeyWorkView(accessibilityNodeInfo.findAccessibilityNodeInfosByViewId(MESSAGE_TEXT_VIEW_ID));
+            }
+        }
+    }
+
+    @SuppressLint("NewApi")
+    private boolean isNewMessage(AccessibilityNodeInfo accessibilityNodeInfo) {
+        List<AccessibilityNodeInfo> accessibilityNodeInfos = accessibilityNodeInfo.findAccessibilityNodeInfosByViewId(NEW_MESSAGE_IMG_ID);
+        return !accessibilityNodeInfos.isEmpty();
+
+    }
+
+
     @Override
     public void onInterrupt() {
-        Toast.makeText(this, "服务终结", Toast.LENGTH_SHORT).show();
-        Log.e("MyAccessibilityService", "onInterrupt: 服务终结 ");
-
+//        Log.e("MyAccessibilityService", "onInterrupt: 服务终结 ");
+//        Toast.makeText(this, "服务终结", Toast.LENGTH_SHORT).show();
     }
 
     @Override
     public boolean onUnbind(Intent intent) {
-        Log.e("MyAccessibilityService", "onUnbind: 断开服务");
         Toast.makeText(this, "断开服务", Toast.LENGTH_SHORT).show();
         return super.onUnbind(intent);
     }
 
     @Override
     protected void onServiceConnected() {
-        Log.e("MyAccessibilityService", "onServiceConnected: 启动服务");
         Toast.makeText(this, "启动服务", Toast.LENGTH_SHORT).show();
         super.onServiceConnected();
 
